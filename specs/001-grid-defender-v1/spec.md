@@ -157,7 +157,7 @@ As a keyboard or screen-reader user, I can inspect the board, build and reorder 
 - **FR-006**: Players MUST be able to add, edit, delete and reorder rule cards on each conduit, up to 8 per conduit.
 - **FR-007**: Each rule card MUST have: action (permit / deny); source (one asset, one zone, or any); destination (one asset, one zone, or any); service (`tcp/20000 (port only)`, `DNP3 (protocol-checked)`, `other TCP`, or `any`); and, only when service is `DNP3 (protocol-checked)`, a set of function codes (one or more of READ, WRITE, SELECT, OPERATE, DIRECT_OPERATE, COLD_RESTART, STOP_APPL, or "any FC").
 - **FR-008**: In Level 3 the player MUST choose which conduit's rule list they are editing; each conduit's rules are independent.
-- **FR-008a**: Every conduit MUST start each round with an empty rule list; rules never carry over between rounds. Rules edited within a round persist across retries of that round.
+- **FR-008a**: *(Revised 2026-11-22: rounds build on each other.)* Round 1.1 starts with empty rule lists. Every later round MUST start with the player's solved rules from the round it carries over from, or that round's reference solution if the player reached it through level select, mapped to the new board's conduits; a round MAY append seeded rules for the player to review (round 2.1). A round the player already solved reopens with their solved rules. Rules edited within a round persist across retries of that round.
 
 **Evaluation**
 
@@ -185,8 +185,8 @@ As a keyboard or screen-reader user, I can inspect the board, build and reorder 
 
 - **FR-022**: Valid Run Wave presses on an unsolved round MUST count as attempts; invalid input, content errors, help, and Run Wave after success MUST NOT.
 - **FR-023**: A round completes once when graded correct; Next becomes available only then. A level completes when both its rounds complete. After round 3.2 the session summary appears.
-- **FR-024**: Rounds MUST be played in order on first playthrough.
-- **FR-025**: Restart MUST require confirmation; confirming clears all progress and returns to the Level 1 briefing.
+- **FR-024**: *(Revised 2026-11-22: level select.)* The player MAY start any level from the level select screen, which shows each level's title, what it teaches and its progress. Rounds inside a level MUST open in order.
+- **FR-025**: Restart MUST require confirmation; confirming clears all progress and returns to the level select.
 - **FR-026**: There MUST be no lives, health, timer, score or speed bonus. Progress lasts for the page session only.
 
 **Access**

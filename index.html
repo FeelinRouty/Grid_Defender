@@ -8,17 +8,18 @@
 </head>
 <body>
   <header class="site-header">
-    <p class="brand">Grid Defender</p>
-    <p class="tagline">Zones, conduits and DNP3 on an 8×8 grid</p>
+    <p class="brand"><span class="brand-mark" aria-hidden="true">⚡</span> Grid Defender</p>
+    <p class="tagline">Prairie Ridge Electric Co-op · Cedar Creek substation · SCADA conduits</p>
     <span class="spacer"></span>
+    <button type="button" id="levels" disabled>Levels</button>
     <button type="button" id="restart" disabled>Restart</button>
   </header>
   <main id="app" aria-live="off">
-    <p class="status">Loading the substations…</p>
+    <p class="status">Energizing the substations…</p>
   </main>
   <dialog id="restart-dialog" aria-labelledby="restart-h">
     <h2 id="restart-h">Restart the session?</h2>
-    <p>This clears every round's progress, attempts and help, and returns to the Level 1 briefing.</p>
+    <p>This clears every round's progress, attempts and help, and returns to the level select.</p>
     <div class="dialog-actions">
       <button type="button" id="restart-cancel">Cancel</button>
       <button type="button" id="restart-confirm" class="primary">Restart</button>

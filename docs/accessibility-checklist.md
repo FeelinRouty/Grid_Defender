@@ -5,7 +5,9 @@ Closes the two **partial** results in the README:
 - **US5-1:** every core action works from the keyboard.
 - **US5-2:** results are announced to a screen reader.
 
-The automated run already confirmed the Tab order, Enter on buttons, and the visible focus ring. What it could **not** do is pick an option inside a native dropdown, or hear a real screen reader.
+The automated run already confirmed the Tab order, Enter on buttons, and the visible focus ring. What it could **not** do is hear a real screen reader.
+
+> **Update 2026-11-22:** the rule editor's dropdowns were replaced by chip groups, which are native radio buttons and checkboxes. Where a step below says "dropdown", Tab into the chip group and choose with the arrow keys (radio groups) or Space (function codes). Rule cards now open and close with their **Rule n** button, and Move up / Move down / Delete are the ↑ ↓ ✕ buttons. Expect VoiceOver to read, for example, "Permit, let it through, radio button, 1 of 2" inside the "Action" group.
 
 **Time needed:** about 15 minutes on a Mac. No extra software.
 

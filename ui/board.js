@@ -1,8 +1,9 @@
 // 8×8 visual board (aria-hidden) plus the always-visible Board details text equivalent (FR-001, FR-028).
 import { zoneOf, effectiveSlt, zoneSlt } from '../engine/flows.js';
+import { icon } from './icons.js';
 
 const COLS = 'ABCDEFGH';
-const ROLE_LABELS = { master: 'SCADA master', hmi: 'HMI', outstation: 'RTU / outstation', engineering: 'Engineering workstation', vendor: 'Vendor laptop', rogue: 'Rogue device' };
+export const ROLE_LABELS = { master: 'SCADA master', hmi: 'Operator HMI', outstation: 'RTU / outstation', engineering: 'Engineering workstation', vendor: 'Vendor laptop', rogue: 'Unknown device' };
 
 function el(tag, attrs = {}, ...children) {
   const node = document.createElement(tag);
@@ -50,17 +51,32 @@ export function renderBoard(board, availableAssets, sltOverrides = {}) {
       const node = el('span', { class: `cell${zone ? ` ${zone.color}` : ''}`, title: cell, 'data-cell': cell });
       const asset = assetByCell.get(cell);
       const conduit = conduitByCell.get(cell);
-      if (asset) node.append(el('span', { class: 'glyph', text: asset.glyph }));
-      if (conduit) { node.classList.add('conduit'); node.textContent = `◆${conduit.id}`; }
+      if (asset) {
+        node.classList.add('has-asset', `role-${asset.role}`);
+        node.title = `${asset.id} · ${asset.name} · ${cell}`;
+        node.append(el('span', { class: 'piece' }, icon(asset.role, 'piece-icon'), el('span', { class: 'glyph', text: asset.glyph })));
+      }
+      if (conduit) {
+        node.classList.add('conduit');
+        node.title = `Conduit ${conduit.id} · ${cell}`;
+        node.append(el('span', { class: 'piece' }, icon('conduit', 'piece-icon'), el('span', { class: 'glyph', text: conduit.id })));
+      }
       grid.append(node);
     }
   }
 
+  // Zone name plates, placed on the zone's top-left cell.
+  for (const z of board.zones) {
+    const first = [...z.cells].sort((a, b) => Number(a.slice(1)) - Number(b.slice(1)) || COLS.indexOf(a[0]) - COLS.indexOf(b[0]))[0];
+    const plate = el('span', { class: `zone-plate ${z.color}`, text: `${z.name} · SL-T ${zoneSlt(board, z.id, sltOverrides)}` });
+    const host = grid.querySelector(`[data-cell="${first}"]`);
+    if (host) host.append(plate);
+  }
   grid.append(el('span', { class: 'packet-layer' }));
 
   const legend = el('ul', { class: 'legend', 'aria-hidden': 'true' },
     ...board.zones.map(z => el('li', {}, el('span', { class: `swatch cell ${z.color}` }), `${z.name} · SL-T ${zoneSlt(board, z.id, sltOverrides)}`)),
-    el('li', { text: '◆ = conduit' }));
+    el('li', {}, icon('conduit', 'legend-icon'), 'conduit (firewall)'));
 
   const zoneName = id => (board.zones.find(z => z.id === id) || {}).name || id;
   const details = el('section', { class: 'board-details', 'aria-labelledby': 'board-details-h' },

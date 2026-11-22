@@ -24,18 +24,19 @@ const DEFAULT_LIMIT_TEXT = {
 };
 
 export function serviceLabel(flow) {
-  if (flow.variant === 'dnp3') return `DNP3 ${flow.fc}${FC_HEX[flow.fc] ? ` (${FC_HEX[flow.fc]})` : ''}`;
+  if (flow.variant === 'dnp3') return `DNP3 ${flow.fc}${FC_HEX[flow.fc] ? ` ${FC_HEX[flow.fc]}` : ''}`;
   if (flow.variant === 'non-dnp3-20000') return 'non-DNP3 on tcp/20000';
   return 'other TCP';
 }
 
 export function endpointLabel(board, assetId) {
   const asset = assetById(board, assetId);
-  return asset ? `${asset.id}(${asset.cell})` : assetId;
+  return asset ? asset.id : assetId;
 }
 
+/** "M → R1 · DNP3 READ 0x01". Grid cells are shown on the board and in Board details, not in flow text. */
 export function describeFlow(board, flow) {
-  return `${endpointLabel(board, flow.src)} → ${endpointLabel(board, flow.dst)} ${serviceLabel(flow)}`;
+  return `${endpointLabel(board, flow.src)} → ${endpointLabel(board, flow.dst)} · ${serviceLabel(flow)}`;
 }
 
 export function ruleText(ruleIndex) {

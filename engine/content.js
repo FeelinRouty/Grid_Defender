@@ -92,6 +92,7 @@ export function validateContent(doc) {
     for (const [zoneId, value] of Object.entries(level.sltOverrides || {})) {
       if (!board.zones.some(z => z.id === zoneId) || ![1, 2, 3].includes(value)) err('schema', `bad sltOverrides entry ${zoneId}`, level.id);
     }
+    for (const key of ['story', 'teaches']) if (typeof level[key] !== 'string' || !level[key].trim()) err('schema', `level needs ${key} text`, level.id);
     const b = level.briefing || {};
     if (!Array.isArray(b.paragraphs) || !b.paragraphs.length || !b.workedExample || !Array.isArray(b.simplifications)) {
       err('schema', 'briefing needs paragraphs, workedExample and simplifications', level.id);
@@ -156,6 +157,25 @@ export function validateContent(doc) {
         if (p.explanation !== undefined && typeof p.explanation !== 'string') E('schema', `packet ${p.id} explanation must be text`);
         if (p.sourceIds !== undefined) checkSources(p.sourceIds, level.id, round.id);
         seen.set(p.id, p);
+      }
+
+      // Round.solution (reference rules) and Round.carryOver (rules build on an earlier round)
+      const conduitIds = new Set(board.conduits.map(c => c.id));
+      const checkRuleLists = (lists, what) => {
+        if (!lists || typeof lists !== 'object' || Array.isArray(lists)) { E('schema', `${what} must map conduit ids to rule lists`); return; }
+        for (const [cid, list] of Object.entries(lists)) {
+          if (!conduitIds.has(cid)) E('schema', `${what} names unknown conduit ${cid}`);
+          if (!Array.isArray(list)) E('schema', `${what} for conduit ${cid} must be a list`);
+        }
+      };
+      checkRuleLists(round.solution, 'solution');
+      if (round.carryOver !== undefined) {
+        const c = round.carryOver;
+        const earlier = doc.levels.flatMap(l => l.rounds || []).map(r => r.id);
+        const pos = earlier.indexOf(round.id);
+        if (!c || earlier.indexOf(c.from) < 0 || earlier.indexOf(c.from) >= pos) E('carry-over', `carryOver.from must name an earlier round, got "${c && c.from}"`);
+        for (const target of Object.values((c && c.conduitMap) || {})) if (!conduitIds.has(target)) E('carry-over', `carryOver.conduitMap targets unknown conduit ${target}`);
+        if (c && c.add !== undefined) checkRuleLists(c.add, 'carryOver.add');
       }
 
       // Round.hints, Round.feedback, Round.sourceIds

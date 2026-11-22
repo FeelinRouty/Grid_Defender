@@ -53,7 +53,7 @@ describe('Evaluator · limit packets (US4-3)', () => {
     const p = r.packets.find(x => ctx.round.wave.find(w => w.id === x.packetId).limit === 'spoofed-source');
     assert.equal(p.verdict, 'out-of-reach');
     assert.deepEqual(p.path, ['A']);
-    assert.equal(p.ruleIndex, 2);
+    assert.equal(p.ruleIndex, 1);
   });
 });
 
@@ -78,7 +78,8 @@ describe('Evaluator · limit packets never graded (US4-3, T048)', () => {
   test('2.2 with correct rules is graded correct even though the spoofed packet passes the conduit', () => {
     const content = loadContent(getContent());
     const ctx = findRound(content, '2.2');
-    const rules = { A: [{ action: 'permit', src: 'asset:M', dst: 'asset:R1', service: 'port-20000' }, { action: 'permit', src: 'asset:M', dst: 'asset:R2', service: 'port-20000' }] };
+    const rules = { A: [{ action: 'permit', src: 'asset:M', dst: 'asset:R1', service: 'port-20000' }, { action: 'permit', src: 'asset:M', dst: 'asset:R2', service: 'port-20000' },
+      { action: 'permit', src: 'asset:H', dst: 'asset:R2', service: 'port-20000' }] };
     const r = evaluateRound(ctx.round, ctx.board, rules, ctx.sltOverrides);
     assert.equal(r.status, 'correct');
   });

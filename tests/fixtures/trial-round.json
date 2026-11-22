@@ -17,6 +17,7 @@
       "Reference rules: 1 permit H → R2 tcp/20000"
     ],
     "feedback": { "correct": "Exactly least privilege for the HMI." },
+    "solution": { "A": [{ "action": "permit", "src": "asset:H", "dst": "asset:R2", "service": "port-20000" }] },
     "sourceIds": ["iana-dnp"]
   }
 }

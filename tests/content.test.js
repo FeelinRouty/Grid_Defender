@@ -2,6 +2,7 @@ import { describe, test, assert, getContent } from './harness.js';
 import { validateContent, loadContent, findRound } from '../engine/content.js';
 import { evaluateRound } from '../engine/rules.js';
 import { getFixture } from './harness.js';
+import { startingRules } from '../engine/state.js';
 
 const clone = () => JSON.parse(JSON.stringify(getContent()));
 const level = (doc, id) => doc.levels.find(l => l.id === id);
@@ -31,7 +32,45 @@ describe('Content · shipped file', () => {
   });
 });
 
+describe('Content · rounds build on each other', () => {
+  const content = () => loadContent(clone());
+  test('every round\'s reference solution is graded correct', () => {
+    const c = content();
+    for (const l of c.levels) for (const r of l.rounds) {
+      const ctx = findRound(c, r.id);
+      const res = evaluateRound(ctx.round, ctx.board, r.solution, ctx.sltOverrides);
+      assert.equal(res.status, 'correct', `${r.id}: ${JSON.stringify(res.failures.map(f => f.code))}`);
+    }
+  });
+  test('every round after 1.1 carries over from the round before it', () => {
+    const ids = clone().levels.flatMap(l => l.rounds);
+    ids.slice(1).forEach((r, i) => assert.equal(r.carryOver && r.carryOver.from, ids[i].id, r.id));
+  });
+  test('no round is already solved by the rules it starts with, so every round asks for new work', () => {
+    const c = content();
+    c.levels.forEach((l, li) => l.rounds.forEach((r, ri) => {
+      if (!r.carryOver) return;
+      const ctx = findRound(c, r.id);
+      const res = evaluateRound(ctx.round, ctx.board, startingRules(c, {}, li, ri).rules, ctx.sltOverrides);
+      assert.equal(res.status, 'incorrect', `${r.id} starts solved`);
+    }));
+  });
+  test('every level has a story and a teaches line', () => {
+    for (const l of clone().levels) assert.ok(l.story && l.teaches, l.id);
+  });
+});
+
 describe('Content · validation errors', () => {
+  test('carryOver from a later round → carry-over', () => {
+    const doc = clone();
+    round(doc, '1.2').carryOver = { from: '2.1' };
+    expectError(doc, 'carry-over', '1.2');
+  });
+  test('missing reference solution → schema', () => {
+    const doc = clone();
+    delete round(doc, '1.1').solution;
+    expectError(doc, 'schema', '1.1');
+  });
   test('C12 ticket referencing unknown asset R3 → unknown-asset', () => {
     const doc = clone();
     round(doc, '1.1').required[0].dst = 'R3';

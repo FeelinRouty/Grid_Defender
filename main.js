@@ -2,7 +2,7 @@
 import { loadContent, roundContext, validateContent } from './engine/content.js';
 import { evaluateRound } from './engine/rules.js';
 import { initialState, reduce } from './engine/state.js';
-import { renderBriefing, mountRound, renderSummary, renderContentError } from './ui/render.js';
+import { renderSelect, renderBriefing, mountRound, renderSummary, renderContentError } from './ui/render.js';
 
 const root = document.getElementById('app');
 let content = null;
@@ -21,15 +21,18 @@ restartBtn.addEventListener('click', () => dispatch({ type: 'requestRestart' }))
 document.getElementById('restart-cancel').addEventListener('click', () => dispatch({ type: 'cancelRestart' }));
 document.getElementById('restart-confirm').addEventListener('click', () => { viewKey = null; dispatch({ type: 'confirmRestart' }); });
 dialog.addEventListener('cancel', () => dispatch({ type: 'cancelRestart' })); // Escape key
+const levelsBtn = document.getElementById('levels');
+levelsBtn.addEventListener('click', () => dispatch({ type: 'showLevels' }));
 
 function syncRestart() {
   restartBtn.disabled = state.view === 'loading' || state.view === 'content-error';
+  levelsBtn.disabled = restartBtn.disabled || state.view === 'select';
   if (state.confirmRestart && !dialog.open) {
     dialog.showModal();
     document.getElementById('restart-cancel').focus();
   } else if (!state.confirmRestart && dialog.open) {
     dialog.close();
-    if (state.view !== 'briefing' || state.levelIndex !== 0 || Object.keys(state.rounds).length) restartBtn.focus();
+    if (state.view !== 'select' || Object.keys(state.rounds).length) restartBtn.focus();
   }
 }
 
@@ -42,10 +45,13 @@ function render() {
   }
   viewKey = key;
   roundView = null;
-  if (state.view === 'briefing') {
+  if (state.view === 'select') {
+    renderSelect(root, content, state, levelIndex => dispatch({ type: 'chooseLevel', levelIndex }), () => dispatch({ type: 'showSummary' }));
+  } else if (state.view === 'briefing') {
     renderBriefing(root, content.levels[state.levelIndex], content, () => dispatch({ type: 'start' }));
   } else if (state.view === 'round') {
-    const ctx = { ...roundContext(content, state.levelIndex, state.roundIndex), sourcesById: content.sourcesById };
+    const ctx = { ...roundContext(content, state.levelIndex, state.roundIndex), sourcesById: content.sourcesById,
+      allRounds: content.levels.flatMap(l => l.rounds) };
     roundView = mountRound(root, ctx, state, {
       onRulesChange: (conduitId, rules) => dispatch({ type: 'editRules', conduitId, rules }),
       onRunWave: () => {
@@ -57,7 +63,7 @@ function render() {
       onHelp: tier => dispatch({ type: 'help', tier }),
     });
   } else if (state.view === 'summary') {
-    renderSummary(root, content, state);
+    renderSummary(root, content, state, () => dispatch({ type: 'showLevels' }));
   } else if (state.view === 'content-error') {
     renderContentError(root, state.errors, boot);
   }

@@ -47,19 +47,20 @@ Open **http://127.0.0.1:8000**. Press **Ctrl+C** to stop the server. The game lo
 
 ## How to play
 
-1. Read the level briefing, then press **Start**.
-2. Read the **Ticket**: it lists the exact flows that must work. Everything else must be denied.
-3. Build rule cards with **Add rule**. Each card has an action, a source and destination (an asset, a zone or Any), a service (`tcp/20000 (port only)`, `DNP3 (protocol-checked)`, `Other TCP` or `Any`) and, for DNP3, function codes. Use **Move up / Move down** to order cards, since the first match wins. In Level 3, choose which conduit you are editing.
+1. Choose a level on the level select screen. Each card says what the level teaches. Read the briefing and its story, then press **Start**.
+2. Read the **Work order**: it lists the exact flows that must work, with **NEW** on the lines this round adds. Everything else must be denied.
+3. Rounds build on each other: each round opens with your rules from the round before (or that round's reference rules if you skipped it), so you change only what the work order needs. Edit a card, or add one with **Add rule**. Each card has an action (Permit or Deny), a source and destination (an asset, a whole zone or Any, grouped by zone), and a service (`DNP3`, `tcp/20000`, `Other TCP` or `Any`). Function codes appear only for DNP3, and one card can carry several. Use **↑ / ↓** to order cards, since the first match wins. In Level 3, choose which conduit you are editing.
 4. Press **Run Wave**. The result panel explains each problem and the wave log lists every packet's verdict, and then packets animate across the board.
 5. Fix and retry as often as you like. A correct round enables **Next**.
 6. Stuck? **Help** reveals a method, then a worked step, then the reference rules as text you type in yourself.
 
 | Control | Action |
 | --- | --- |
-| Mouse or keyboard (Tab, Enter, Space) | Every control is a native button, select, radio button or checkbox |
+| Mouse or keyboard (Tab, Enter, Space, arrow keys) | Every control is a native button, radio button or checkbox; the chips are styled radio buttons and checkboxes |
 | Run Wave | Grades the round and plays the wave; an incomplete card gives guidance instead and doesn't count |
 | Help | Up to three hints per round; recorded as assistance and never completes a round |
-| Restart (header) | Asks for confirmation; Confirm clears the session and returns to the Level 1 briefing, Cancel or Escape changes nothing |
+| Levels (header) | Returns to the level select; progress is kept |
+| Restart (header) | Asks for confirmation; Confirm clears the session and returns to the level select, Cancel or Escape changes nothing |
 
 **Progress:** an attempt is a valid Run Wave on an unsolved round. A round completes the first time it is graded correct, and running again afterwards changes nothing. The summary shows, per round, whether it was completed, the valid attempts, and the help used. There are no lives, timer or score. Reloading the page starts a fresh session.
 
@@ -108,7 +109,9 @@ The project follows Spec Kit: **constitution → specify → clarify → plan �
 
 **Last checked:** 2026-11-21, macOS, Chromium (Claude desktop app browser pane) and Node 26.8.1, on the working tree before the first commit. A fresh copy was served from a subfolder for the final run.
 
-**Automated:** `node tests/run-node.mjs` and `/tests/` → **PASS 65/65**. That covers evaluator cases C1–C14, the limit-packet rules, a speed budget, purity, content validation (16 error codes, the shipped file, and that every source was checked), the trial round, and session state.
+**Automated:** `node tests/run-node.mjs` → **PASS 81/81** (2026-11-22). That covers evaluator cases C1–C14 (with extra hand-checked cases for the reworked rounds 2.1 and 2.2), the limit-packet rules, a speed budget, purity, content validation (17 error codes, the shipped file, and that every source was checked), the trial round, session state, and the round chain: every reference solution is graded correct, and no round is already solved by the rules it starts with.
+
+**2026-11-22 update (themed v1.1):** level select, level stories, rounds that build on each other, the chip rule editor, and DNP3 function codes shown only for the DNP3 service. Checked in the browser pane at 1280 px: level select → Level 3 → round 3.1 solved with real chip clicks (one card carrying READ, SELECT and OPERATE) → Next carried those rules into 3.2 → an empty card was flagged and focused. Keyboard-only and screen-reader passes were not repeated for the new editor.
 
 | Acceptance criterion | Result | Evidence |
 | --- | --- | --- |
@@ -147,7 +150,7 @@ The project follows Spec Kit: **constitution → specify → clarify → plan �
 
 - **Known limitations:**
   - Claims rest on public secondary sources, not the IEC 62443 and IEEE 1815 texts themselves.
-  - Keyboard selection inside dropdowns and screen-reader output haven't been checked by a person.
+  - Keyboard use of the chip editor and screen-reader output haven't been checked by a person.
   - Widths below 768 px are not supported.
   - Progress isn't saved across reloads.
 - **Next improvement:** run the learner playtest ([docs/playtest-script.md](docs/playtest-script.md)) and the keyboard/VoiceOver check ([docs/accessibility-checklist.md](docs/accessibility-checklist.md)). Both were descoped from v1, so the game's teaching effect and its screen-reader experience are unverified.

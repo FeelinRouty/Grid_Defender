@@ -23,8 +23,8 @@ game:
   skill_level: "intermediate"   # players are expected to know IP, ports and ordered ACLs; no OT experience assumed
   play_minutes: 20              # spec target is 15-25 minutes for six rounds; not measured with a learner
   levels: 6                     # 3 levels x 2 rounds
-  card_image: "assets/images/card.webp"   # 1920x1080 WebP, 66 KB; rendered from assets/card/card.html
-  card_image_alt: "Grid Defender title card: an 8x8 board with Engineering, Control Center and Substation zones, where a green path from the engineering workstation crosses both conduits to RTU R2 and a vendor laptop's red path is stopped before conduit 1."
+  card_image: "assets/images/card.webp"   # 1920x1080 WebP, 80 KB; rendered from assets/card/card.html (Level 3 board)
+  card_image_alt: "Grid Defender title card in a dark control-room style: the Level 3 board with Engineering, Control Center and Substation zones, where a green path from the engineering workstation crosses both firewall conduits to RTU R2 and a vendor laptop's red path is stopped before conduit 1."
   repo: "https://github.com/FeelinRouty/Grid_Defender"
   repo_path: ""
   license: "unknown"            # no LICENSE file in the repo
@@ -76,14 +76,14 @@ runtime:
   requires_api_key: false
   uses_ai_at_runtime: false
   browsers: ["Chrome 156 (Claude desktop app browser pane)"]
-  accessibility: "Keyboard: Tab and Enter tested with real key presses through Start, Add rule, Run Wave and Next, with a visible focus ring; choosing options inside native dropdowns by keyboard was not verified. Reduced motion: tested by simulating the media query, not the OS setting. 768 px layout tested. Screen reader: not tested; live-region text checked only."
+  accessibility: "Keyboard: Tab and Enter tested with real key presses through Start, Add rule, Run Wave and Next in the first version, with a visible focus ring; the later chip editor (native radios and checkboxes) was not re-tested by keyboard. Reduced motion: tested by simulating the media query, not the OS setting. 768 px layout tested. Screen reader: not tested; live-region text checked only."
   save_state: "none (progress is in memory; reload starts a new session)"
 
 verification:
   tests: "node tests/run-node.mjs (or open /tests/ after starting the server)"
-  tests_passing: 65
+  tests_passing: 81
   facts_sourced_from: ["IANA port registry (dnp 20000/tcp)", "Wireshark packet-dnp.c (DNP3 function codes, default port)", "Cisco ISA/IEC-62443-3-3 white paper (zones, conduits, SL 0-4, FR 5)", "Cremers, Dehnel-Wild and Milner 2017 (DNP3 Secure Authentication, IEEE 1815-2012 chapter 7)", "Extreme Networks SLX-OS guide (IP Source Guard)"]
-  known_limits: ["The ISA/IEC 62443 and IEEE 1815 texts were not consulted (paywalled); claims rest on public secondary sources", "Per-zone target security levels and their mapping to firewall rules are a game simplification", "Models only DNP3 over TCP with the master opening every connection; no UDP, serial, link-layer addresses, TLS or outstation-initiated connections", "Secure Authentication behaviour is explained but not simulated", "No 62443 risk assessment, other kinds of security level, or Purdue model", "Spoofed-source and intra-zone packets are shown as out of reach and never graded", "Learner playtest and manual keyboard-dropdown and VoiceOver checks were descoped and not run", "Widths below 768 px are not supported; no saved progress"]
+  known_limits: ["The ISA/IEC 62443 and IEEE 1815 texts were not consulted (paywalled); claims rest on public secondary sources", "Per-zone target security levels and their mapping to firewall rules are a game simplification", "Models only DNP3 over TCP with the master opening every connection; no UDP, serial, link-layer addresses, TLS or outstation-initiated connections", "Secure Authentication behaviour is explained but not simulated", "No 62443 risk assessment, other kinds of security level, or Purdue model", "Spoofed-source and intra-zone packets are shown as out of reach and never graded", "Learner playtest and manual keyboard and VoiceOver checks were descoped and not run", "Widths below 768 px are not supported; no saved progress"]
 ---
 
 ## In one paragraph

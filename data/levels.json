@@ -135,28 +135,28 @@
         {
           "id": "H",
           "glyph": "H",
-          "name": "HMI",
+          "name": "Operator HMI",
           "role": "hmi",
           "cell": "F2"
         },
         {
           "id": "R1",
           "glyph": "R1",
-          "name": "Feeder RTU 1",
+          "name": "Feeder 1 RTU",
           "role": "outstation",
           "cell": "B6"
         },
         {
           "id": "R2",
           "glyph": "R2",
-          "name": "Feeder RTU 2",
+          "name": "Feeder 2 RTU",
           "role": "outstation",
           "cell": "G6"
         },
         {
           "id": "X",
           "glyph": "X",
-          "name": "Rogue device",
+          "name": "Unknown device",
           "role": "rogue",
           "cell": "E7"
         }
@@ -278,21 +278,21 @@
         {
           "id": "H",
           "glyph": "H",
-          "name": "HMI",
+          "name": "Operator HMI",
           "role": "hmi",
           "cell": "G2"
         },
         {
           "id": "R1",
           "glyph": "R1",
-          "name": "Feeder RTU 1",
+          "name": "Feeder 1 RTU",
           "role": "outstation",
           "cell": "B6"
         },
         {
           "id": "R2",
           "glyph": "R2",
-          "name": "Feeder RTU 2",
+          "name": "Feeder 2 RTU",
           "role": "outstation",
           "cell": "G6"
         }
@@ -320,7 +320,7 @@
   "levels": [
     {
       "id": "L1",
-      "title": "Zones & conduits",
+      "title": "First light",
       "concept": "Cross-zone traffic must pass a conduit, and the conduit permits only named flows.",
       "boardId": "two-zone",
       "briefing": {
@@ -351,7 +351,7 @@
         {
           "id": "1.1",
           "title": "First poll",
-          "ticketText": "Work order 1.1: commission polling. The SCADA master (M) must read Feeder RTU 1 (R1) over DNP3.",
+          "ticketText": "Work order 1.1: Cedar Creek is energized. The SCADA master (M) must poll Feeder 1's RTU (R1) over DNP3 so the operators can see the hospital feeder.",
           "availableAssets": [
             "M",
             "H",
@@ -417,7 +417,7 @@
           "hints": [
             "Method: write down the ticket's flow as source → destination → service, then permit exactly that. Everything else is already denied by the implicit deny.",
             "Worked step: the source is the SCADA master M and the destination is R1. DNP3 runs on TCP port 20000, so the service is tcp/20000 (or DNP3 with READ).",
-            "Reference rules (type them in yourself): 1 permit M → R1 tcp/20000"
+            "Reference rules: 1 permit M → R1 tcp/20000"
           ],
           "feedback": {
             "correct": "Exactly least privilege. The only new connection your conduit permits is the master polling R1 on TCP 20000, and the poll response returns inside that connection. The HMI's direct poll and the telnet attempt both hit the implicit deny.",
@@ -429,12 +429,22 @@
           "sourceIds": [
             "iana-dnp",
             "cisco-62443-3-3"
-          ]
+          ],
+          "solution": {
+            "A": [
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R1",
+                "service": "port-20000"
+              }
+            ]
+          }
         },
         {
           "id": "1.2",
           "title": "Second feeder",
-          "ticketText": "Work order 1.2: a second feeder RTU (R2) is in service. The SCADA master (M) must read both R1 and R2 over DNP3.",
+          "ticketText": "Work order 1.2: Feeder 2 is back from maintenance. Keep your rule for R1 and add what the master (M) needs to poll Feeder 2's RTU (R2) over DNP3.",
           "availableAssets": [
             "M",
             "H",
@@ -512,9 +522,9 @@
             }
           ],
           "hints": [
-            "Method: there are now two ticket flows. Write one narrow permit per flow rather than one broad permit that covers both.",
-            "Worked step: the first card is permit M → R1 tcp/20000. The second card has the same source and service but a different destination.",
-            "Reference rules (type them in yourself): 1 permit M → R1 tcp/20000; 2 permit M → R2 tcp/20000"
+            "Method: your R1 rule is already on the conduit. There is one new ticket flow; add one narrow permit for it rather than widening the rule you have.",
+            "Worked step: the new card has the same source and service as your R1 card, but the destination is R2.",
+            "Reference rules: 1 permit M → R1 tcp/20000; 2 permit M → R2 tcp/20000"
           ],
           "feedback": {
             "correct": "Exactly least privilege: two named flows, nothing else. The HMI's direct control of R2 hit the implicit deny. See the out-of-reach note for packet #4.",
@@ -525,9 +535,30 @@
           },
           "sourceIds": [
             "cisco-62443-3-3"
-          ]
+          ],
+          "carryOver": {
+            "from": "1.1"
+          },
+          "solution": {
+            "A": [
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R1",
+                "service": "port-20000"
+              },
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R2",
+                "service": "port-20000"
+              }
+            ]
+          }
         }
-      ]
+      ],
+      "teaches": "Zones, conduits and least privilege: permit exactly the flows the work order names, and let the implicit deny stop everything else.",
+      "story": "It's your first week at Prairie Ridge Electric Cooperative, and the new Cedar Creek substation energizes at dawn. Eleven thousand homes, the county hospital and the water plant hang off its feeders, and the only thing between them and the control center network is your conduit."
     },
     {
       "id": "L2",
@@ -558,87 +589,13 @@
       "rounds": [
         {
           "id": "2.1",
-          "title": "Who calls whom",
-          "ticketText": "Work order 2.1: R1 has been configured to send unsolicited alarms. The SCADA master (M) must keep polling R1, and R1's unsolicited responses must reach M.",
+          "title": "The night-shift rule",
+          "ticketText": "Work order 2.1: R1 and R2 now send unsolicited alarms. Your Level 1 rules are on conduit A, plus rule 3, which the night shift added so \"the alarms can get through\". The master (M) must keep polling R1 and R2, and every alarm must still reach M. Review the conduit.",
           "availableAssets": [
             "M",
             "H",
             "R1",
             "R2"
-          ],
-          "required": [
-            {
-              "src": "M",
-              "dst": "R1",
-              "variant": "dnp3",
-              "fcs": [
-                "READ"
-              ]
-            }
-          ],
-          "wave": [
-            {
-              "id": "p1",
-              "kind": "new",
-              "flow": {
-                "src": "M",
-                "dst": "R1",
-                "variant": "dnp3",
-                "fc": "READ"
-              },
-              "label": "Master opens the session and polls"
-            },
-            {
-              "id": "p2",
-              "kind": "in-session",
-              "flow": {
-                "src": "R1",
-                "dst": "M",
-                "variant": "dnp3",
-                "fc": "UNSOLICITED_RESPONSE"
-              },
-              "label": "Unsolicited alarm from R1",
-              "parent": "p1"
-            },
-            {
-              "id": "p3",
-              "kind": "new",
-              "flow": {
-                "src": "R1",
-                "dst": "M",
-                "variant": "dnp3",
-                "fc": "READ"
-              },
-              "label": "Compromised R1 tries to open its own connection to M"
-            }
-          ],
-          "hints": [
-            "Method: ask which side opens the connection. Only that direction needs a rule; the stateful conduit handles everything inside the connection.",
-            "Worked step: the master opens the session, so the only card you need is from M to R1. The unsolicited alarm (0x82) rides on that session.",
-            "Reference rules (type them in yourself): 1 permit M → R1 tcp/20000"
-          ],
-          "feedback": {
-            "correct": "Exactly least privilege. One rule lets the master open the session, and R1's unsolicited alarm (0x82) came back inside it with no extra rule. The compromised R1's attempt to open its own connection hit the implicit deny.",
-            "required-blocked": "The ticket flow {flow} was blocked at conduit {conduit} by {rule}. Add a permit for exactly this flow above any deny that matches it.",
-            "wrong-conduit": "The ticket flow {flow} is permitted on part of its path but blocked at conduit {conduit} by {rule}. A flow that crosses two conduits must be permitted on both: add a matching permit on conduit {conduit}.",
-            "attack-allowed": "{flow} opened a new connection through conduit {conduit} via {rule}. In this game's DNP3 model the master opens every session, and unsolicited responses (0x82) return inside it, so this direction is never needed. Remove the outstation-to-master permit.",
-            "over-permissive": "Your rules permit {count} cross-zone flow(s) the ticket doesn't need, for example {flow} via {rule} at conduit {conduit}. Permit only what the ticket names."
-          },
-          "sourceIds": [
-            "oxford-sav5",
-            "wireshark-dnp"
-          ]
-        },
-        {
-          "id": "2.2",
-          "title": "Unsolicited and spoofing",
-          "ticketText": "Work order 2.2: both feeder RTUs send unsolicited alarms. The SCADA master (M) must poll R1 and R2. Security reports an unknown device (X) plugged in at the substation.",
-          "availableAssets": [
-            "M",
-            "H",
-            "R1",
-            "R2",
-            "X"
           ],
           "required": [
             {
@@ -664,6 +621,29 @@
               "kind": "new",
               "flow": {
                 "src": "M",
+                "dst": "R1",
+                "variant": "dnp3",
+                "fc": "READ"
+              },
+              "label": "Master opens the session and polls R1"
+            },
+            {
+              "id": "p2",
+              "kind": "in-session",
+              "parent": "p1",
+              "flow": {
+                "src": "R1",
+                "dst": "M",
+                "variant": "dnp3",
+                "fc": "UNSOLICITED_RESPONSE"
+              },
+              "label": "Unsolicited alarm from R1"
+            },
+            {
+              "id": "p3",
+              "kind": "new",
+              "flow": {
+                "src": "M",
                 "dst": "R2",
                 "variant": "dnp3",
                 "fc": "READ"
@@ -671,27 +651,146 @@
               "label": "Master polls R2"
             },
             {
-              "id": "p2",
+              "id": "p4",
               "kind": "in-session",
+              "parent": "p3",
               "flow": {
                 "src": "R2",
                 "dst": "M",
                 "variant": "dnp3",
                 "fc": "UNSOLICITED_RESPONSE"
               },
-              "label": "Unsolicited alarm from R2",
-              "parent": "p1"
+              "label": "Unsolicited alarm from R2"
+            },
+            {
+              "id": "p5",
+              "kind": "new",
+              "flow": {
+                "src": "R1",
+                "dst": "M",
+                "variant": "dnp3",
+                "fc": "READ"
+              },
+              "label": "Compromised R1 opens its own connection to M"
+            }
+          ],
+          "hints": [
+            "Method: ask which side opens the connection. Only that direction needs a rule; the stateful conduit returns everything inside the connection, unsolicited alarms included.",
+            "Worked step: rules 1 and 2 let the master open both sessions, and the alarms (0x82) ride back inside them. Rule 3 only lets the Substation open new connections to M. Delete it.",
+            "Reference rules: 1 permit M → R1 tcp/20000; 2 permit M → R2 tcp/20000"
+          ],
+          "feedback": {
+            "correct": "Exactly least privilege. Both alarms (0x82) came back inside the master's sessions with no inbound rule, and the compromised R1's attempt to open its own connection hit the implicit deny. The night-shift rule was a hole, not a fix.",
+            "required-blocked": "The ticket flow {flow} was blocked at conduit {conduit} by {rule}. Add a permit for exactly this flow above any deny that matches it.",
+            "wrong-conduit": "The ticket flow {flow} is permitted on part of its path but blocked at conduit {conduit} by {rule}. A flow that crosses two conduits must be permitted on both: add a matching permit on conduit {conduit}.",
+            "attack-allowed": "{flow} opened a new connection through conduit {conduit} via {rule}. In this game's DNP3 model the master opens every session and unsolicited responses (0x82) return inside it, so this direction is never needed. Remove the Substation-to-master permit.",
+            "over-permissive": "Your rules permit {count} cross-zone flow(s) the ticket doesn't need, for example {flow} via {rule} at conduit {conduit}. Permit only what the ticket names."
+          },
+          "sourceIds": [
+            "oxford-sav5",
+            "wireshark-dnp"
+          ],
+          "carryOver": {
+            "from": "1.2",
+            "add": {
+              "A": [
+                {
+                  "action": "permit",
+                  "src": "zone:substation",
+                  "dst": "asset:M",
+                  "service": "port-20000"
+                }
+              ]
+            }
+          },
+          "solution": {
+            "A": [
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R1",
+                "service": "port-20000"
+              },
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R2",
+                "service": "port-20000"
+              }
+            ]
+          }
+        },
+        {
+          "id": "2.2",
+          "title": "Wall display and a stranger",
+          "ticketText": "Work order 2.2: the operators' new wall display (HMI, H) must read Feeder 2's RTU (R2) directly; it must not reach R1. Keep the master's polling. Security also reports an unknown device (X) plugged in at Cedar Creek.",
+          "availableAssets": [
+            "M",
+            "H",
+            "R1",
+            "R2",
+            "X"
+          ],
+          "required": [
+            {
+              "src": "M",
+              "dst": "R1",
+              "variant": "dnp3",
+              "fcs": [
+                "READ"
+              ]
+            },
+            {
+              "src": "M",
+              "dst": "R2",
+              "variant": "dnp3",
+              "fcs": [
+                "READ"
+              ]
+            },
+            {
+              "src": "H",
+              "dst": "R2",
+              "variant": "dnp3",
+              "fcs": [
+                "READ"
+              ]
+            }
+          ],
+          "wave": [
+            {
+              "id": "p1",
+              "kind": "new",
+              "flow": {
+                "src": "H",
+                "dst": "R2",
+                "variant": "dnp3",
+                "fc": "READ"
+              },
+              "label": "Wall display reads Feeder 2 load"
+            },
+            {
+              "id": "p2",
+              "kind": "in-session",
+              "parent": "p1",
+              "flow": {
+                "src": "R2",
+                "dst": "H",
+                "variant": "dnp3",
+                "fc": "UNSOLICITED_RESPONSE"
+              },
+              "label": "Unsolicited alarm from R2 to the display"
             },
             {
               "id": "p3",
               "kind": "new",
               "flow": {
-                "src": "X",
-                "dst": "M",
+                "src": "H",
+                "dst": "R1",
                 "variant": "dnp3",
                 "fc": "READ"
               },
-              "label": "Rogue device X tries to reach the master"
+              "label": "Display reaching for R1 (not on the ticket)"
             },
             {
               "id": "p4",
@@ -699,23 +798,34 @@
               "flow": {
                 "src": "X",
                 "dst": "M",
-                "variant": "other-tcp"
-              },
-              "label": "Rogue device X scans the master"
-            },
-            {
-              "id": "p5",
-              "kind": "limit",
-              "flow": {
-                "src": "M",
-                "dst": "R2",
                 "variant": "dnp3",
                 "fc": "READ"
               },
-              "label": "HMI forging the master's address",
+              "label": "Unknown device X tries to reach the master"
+            },
+            {
+              "id": "p5",
+              "kind": "new",
+              "flow": {
+                "src": "X",
+                "dst": "M",
+                "variant": "other-tcp"
+              },
+              "label": "Unknown device X scans the master"
+            },
+            {
+              "id": "p6",
+              "kind": "limit",
+              "flow": {
+                "src": "M",
+                "dst": "R1",
+                "variant": "dnp3",
+                "fc": "READ"
+              },
+              "label": "HMI forging the master's address to reach R1",
               "limit": "spoofed-source",
               "actualSrc": "H",
-              "explanation": "The HMI forged the master's address, so at conduit A this packet looked exactly like the permitted M → R2 poll, and no conduit rule can tell them apart. DNP3 Secure Authentication (IEEE 1815-2012, Chapter 7) lets an outstation challenge a critical request and act on it only if it was genuinely sent by a legitimate user. On the network side, switch features such as IP Source Guard only accept the source addresses bound to each access port, which limits a host's ability to claim another host's address.",
+              "explanation": "The HMI may not reach R1, so it forged the master's address. At conduit A the packet looked exactly like the permitted M → R1 poll, and no conduit rule can tell them apart. DNP3 Secure Authentication (IEEE 1815-2012, Chapter 7) lets an outstation challenge a critical request and act on it only if it was genuinely sent by a legitimate user. On the network side, switch features such as IP Source Guard only accept the source addresses bound to each access port, which limits a host's ability to claim another host's address.",
               "sourceIds": [
                 "oxford-sav5",
                 "extreme-ipsg"
@@ -723,22 +833,49 @@
             }
           ],
           "hints": [
-            "Method: write one permit per ticket flow, in the direction the master opens. Unsolicited alarms need no rule of their own.",
-            "Worked step: the cards are M → R1 and M → R2 on tcp/20000. Nothing in the Substation needs to open connections to the Control Center.",
-            "Reference rules (type them in yourself): 1 permit M → R1 tcp/20000; 2 permit M → R2 tcp/20000"
+            "Method: rules 1 and 2 already cover the master. Add one permit for the new ticket flow, in the direction the display opens. Nothing in the Substation needs to open connections to the Control Center.",
+            "Worked step: the new card is H → R2 on tcp/20000. Don't widen it to the Substation zone: the display must not reach R1.",
+            "Reference rules: 1 permit M → R1 tcp/20000; 2 permit M → R2 tcp/20000; 3 permit H → R2 tcp/20000"
           ],
           "feedback": {
-            "correct": "Exactly least privilege. Only the master opens sessions, the unsolicited alarm still arrived inside the master's session, and the rogue device was denied. See the out-of-reach note for packet #5: least privilege at the conduit is necessary, but it is not the whole defence.",
+            "correct": "Exactly least privilege. The display reads R2 and nothing else, R2's alarm came back inside the display's session, and device X was denied. See the out-of-reach note for packet #6: least privilege at the conduit is necessary, but it is not the whole defence.",
             "required-blocked": "The ticket flow {flow} was blocked at conduit {conduit} by {rule}. Add a permit for exactly this flow above any deny that matches it.",
             "wrong-conduit": "The ticket flow {flow} is permitted on part of its path but blocked at conduit {conduit} by {rule}. A flow that crosses two conduits must be permitted on both: add a matching permit on conduit {conduit}.",
-            "attack-allowed": "{flow} opened a new connection through conduit {conduit} via {rule}. Unsolicited responses return inside the master's session, so no Substation-to-Control-Center rule is needed, and this one admits the rogue device. Remove the Substation-to-Control-Center permit.",
+            "attack-allowed": "{flow} got through conduit {conduit} via {rule}, and that traffic isn't on the ticket. Name the exact source and destination; the display may read R2 only, and nothing in the Substation opens connections to the Control Center.",
             "over-permissive": "Your rules permit {count} cross-zone flow(s) the ticket doesn't need, for example {flow} via {rule} at conduit {conduit}. Permit only what the ticket names."
           },
           "sourceIds": [
             "oxford-sav5"
-          ]
+          ],
+          "carryOver": {
+            "from": "2.1"
+          },
+          "solution": {
+            "A": [
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R1",
+                "service": "port-20000"
+              },
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R2",
+                "service": "port-20000"
+              },
+              {
+                "action": "permit",
+                "src": "asset:H",
+                "dst": "asset:R2",
+                "service": "port-20000"
+              }
+            ]
+          }
         }
-      ]
+      ],
+      "teaches": "Stateful conduits and DNP3 direction: the master opens every session, replies and unsolicited alarms ride back inside it, and an RTU-to-master rule is a hole.",
+      "story": "A January cold snap has every heater in the county running, and Cedar Creek's RTUs are firing alarms faster than the night shift can read them. Someone \"fixed\" the alarm traffic with a quick firewall rule, and now anything in the substation can call the master."
     },
     {
       "id": "L3",
@@ -773,8 +910,8 @@
       "rounds": [
         {
           "id": "3.1",
-          "title": "Select before operate",
-          "ticketText": "Work order 3.1: the master (M) must poll R1 and trip its breaker using select-before-operate (READ, SELECT, OPERATE). Threat intel warns that the master itself may be compromised.",
+          "title": "Raise the bar",
+          "ticketText": "Work order 3.1: your Level 2 rules now sit on conduit 2, which is SL-T 3. Upgrade them. The master (M) must poll R1 and trip its breaker with select-before-operate (READ, SELECT, OPERATE), and keep reading R2. The display (H) still reads R2. Threat intel warns the master itself may be compromised.",
           "availableAssets": [
             "E",
             "V",
@@ -792,6 +929,22 @@
                 "READ",
                 "SELECT",
                 "OPERATE"
+              ]
+            },
+            {
+              "src": "M",
+              "dst": "R2",
+              "variant": "dnp3",
+              "fcs": [
+                "READ"
+              ]
+            },
+            {
+              "src": "H",
+              "dst": "R2",
+              "variant": "dnp3",
+              "fcs": [
+                "READ"
               ]
             }
           ],
@@ -845,33 +998,84 @@
               "kind": "new",
               "flow": {
                 "src": "H",
-                "dst": "R1",
+                "dst": "R2",
                 "variant": "non-dnp3-20000"
               },
               "label": "Tunnel disguised on port 20000"
+            },
+            {
+              "id": "p6",
+              "kind": "new",
+              "flow": {
+                "src": "H",
+                "dst": "R2",
+                "variant": "dnp3",
+                "fc": "WRITE"
+              },
+              "label": "Display writing to R2 (not on the ticket)"
             }
           ],
           "hints": [
-            "Method: at SL-T 3 a permit must name the function codes, not just the port. List the codes on the ticket and permit only those. If you add a deny, place it above any permit that would also match.",
-            "Worked step: use service 'DNP3 (protocol-checked)' with READ, SELECT and OPERATE ticked. That also stops the non-DNP3 tunnel, because it isn't DNP3.",
-            "Reference rules (type them in yourself), on conduit 2: 1 permit M → R1 DNP3 {READ, SELECT, OPERATE}"
+            "Method: at SL-T 3 a port-only permit is too broad. Change each card's service to DNP3 and tick only the function codes its ticket line names. One card can carry several codes.",
+            "Worked step: rule 1 becomes M → R1 DNP3 with READ, SELECT and OPERATE ticked. That also stops the non-DNP3 tunnel, because it isn't DNP3.",
+            "Reference rules, on conduit 2: 1 permit M → R1 DNP3 {READ, SELECT, OPERATE}; 2 permit M → R2 DNP3 {READ}; 3 permit H → R2 DNP3 {READ}"
           ],
           "feedback": {
-            "correct": "Exactly least privilege. The master can poll and use select-before-operate, but even a compromised master cannot DIRECT_OPERATE or COLD_RESTART R1, and the port-20000 tunnel failed the DNP3 protocol check. Function-code filtering limits what a trusted address can do.",
+            "correct": "Exactly least privilege. The master can poll and use select-before-operate, but even a compromised master cannot DIRECT_OPERATE or COLD_RESTART R1. The display can only READ R2, and the port-20000 tunnel failed the DNP3 protocol check. Function-code filtering limits what a trusted address can do.",
             "required-blocked": "The ticket flow {flow} was blocked at conduit {conduit} by {rule}. Add a permit for exactly this flow above any deny that matches it.",
             "wrong-conduit": "The ticket flow {flow} is permitted on part of its path but blocked at conduit {conduit} by {rule}. A flow that crosses two conduits must be permitted on both: add a matching permit on conduit {conduit}.",
-            "attack-allowed": "{flow} got through conduit {conduit} via {rule}. Port 20000 or 'any FC' lets dangerous function codes through, even from the real master's address. Permit only READ, SELECT and OPERATE, and check the order of your rules: the first match wins.",
+            "attack-allowed": "{flow} got through conduit {conduit} via {rule}. Port 20000 or 'any FC' lets dangerous function codes through, even from a trusted address. Switch each card to DNP3 with only the ticketed codes, and check the order of your rules: the first match wins.",
             "over-permissive": "Your rules permit {count} flow(s) the ticket doesn't need, for example {flow} via {rule} at conduit {conduit}. At SL-T 3 both the function code and the protocol check count: a port-only or 'any FC' permit is too broad."
           },
           "sourceIds": [
             "wireshark-dnp",
             "cisco-62443-3-3"
-          ]
+          ],
+          "carryOver": {
+            "from": "2.2",
+            "conduitMap": {
+              "A": "2"
+            }
+          },
+          "solution": {
+            "1": [],
+            "2": [
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R1",
+                "service": "dnp3",
+                "fcs": [
+                  "READ",
+                  "SELECT",
+                  "OPERATE"
+                ]
+              },
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R2",
+                "service": "dnp3",
+                "fcs": [
+                  "READ"
+                ]
+              },
+              {
+                "action": "permit",
+                "src": "asset:H",
+                "dst": "asset:R2",
+                "service": "dnp3",
+                "fcs": [
+                  "READ"
+                ]
+              }
+            ]
+          }
         },
         {
           "id": "3.2",
           "title": "Two conduits",
-          "ticketText": "Work order 3.2: the master (M) must poll R1 and R2, and must DIRECT_OPERATE R2's capacitor bank (the utility allows direct control for this device only). The engineering workstation (E) must read R2's event logs. A vendor laptop (V) is also on the Engineering network.",
+          "ticketText": "Work order 3.2: the master (M) must also DIRECT_OPERATE R2's capacitor bank (the co-op allows direct control for this device only). The engineering workstation (E) must read R2's event logs. A vendor laptop (V) is also on the Engineering network. Keep everything from 3.1.",
           "availableAssets": [
             "E",
             "V",
@@ -886,7 +1090,9 @@
               "dst": "R1",
               "variant": "dnp3",
               "fcs": [
-                "READ"
+                "READ",
+                "SELECT",
+                "OPERATE"
               ]
             },
             {
@@ -896,6 +1102,14 @@
               "fcs": [
                 "READ",
                 "DIRECT_OPERATE"
+              ]
+            },
+            {
+              "src": "H",
+              "dst": "R2",
+              "variant": "dnp3",
+              "fcs": [
+                "READ"
               ]
             },
             {
@@ -977,9 +1191,9 @@
             }
           ],
           "hints": [
-            "Method: trace each ticket flow's path. Flows from Engineering cross conduit 1 and then conduit 2, so they need a permit on both. Conduit 2 is SL-T 3 (name the function codes); conduit 1 is SL-T 2.",
-            "Worked step: on conduit 2, write one card per ticket line: M → R1 {READ}, M → R2 {READ, DIRECT_OPERATE}, E → R2 {READ}. Then switch to conduit 1 and permit E → R2.",
-            "Reference rules (type them in yourself). Conduit 1: 1 permit E → R2 tcp/20000. Conduit 2: 1 permit M → R1 DNP3 {READ}; 2 permit M → R2 DNP3 {READ, DIRECT_OPERATE}; 3 permit E → R2 DNP3 {READ}"
+            "Method: two ticket lines changed. Add DIRECT_OPERATE to the card that already covers M → R2. Then trace the new Engineering flow: it crosses conduit 1 and then conduit 2, so it needs a permit on both.",
+            "Worked step: on conduit 2, tick DIRECT_OPERATE on rule 2 and add E → R2 DNP3 {READ}. Then switch to conduit 1 (SL-T 2) and permit E → R2.",
+            "Reference rules. Conduit 1: 1 permit E → R2 tcp/20000. Conduit 2: 1 permit M → R1 DNP3 {READ, SELECT, OPERATE}; 2 permit M → R2 DNP3 {READ, DIRECT_OPERATE}; 3 permit H → R2 DNP3 {READ}; 4 permit E → R2 DNP3 {READ}"
           ],
           "feedback": {
             "correct": "Exactly least privilege across two conduits. Engineering's log read crossed both conduits, the capacitor bank can be switched directly, and DIRECT_OPERATE to R1 is still blocked, because the ticket, not the function code, defines what is allowed. The vendor laptop stopped at conduit 1.",
@@ -991,9 +1205,65 @@
           "sourceIds": [
             "wireshark-dnp",
             "cisco-62443-3-3"
-          ]
+          ],
+          "carryOver": {
+            "from": "3.1"
+          },
+          "solution": {
+            "1": [
+              {
+                "action": "permit",
+                "src": "asset:E",
+                "dst": "asset:R2",
+                "service": "port-20000"
+              }
+            ],
+            "2": [
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R1",
+                "service": "dnp3",
+                "fcs": [
+                  "READ",
+                  "SELECT",
+                  "OPERATE"
+                ]
+              },
+              {
+                "action": "permit",
+                "src": "asset:M",
+                "dst": "asset:R2",
+                "service": "dnp3",
+                "fcs": [
+                  "READ",
+                  "DIRECT_OPERATE"
+                ]
+              },
+              {
+                "action": "permit",
+                "src": "asset:H",
+                "dst": "asset:R2",
+                "service": "dnp3",
+                "fcs": [
+                  "READ"
+                ]
+              },
+              {
+                "action": "permit",
+                "src": "asset:E",
+                "dst": "asset:R2",
+                "service": "dnp3",
+                "fcs": [
+                  "READ"
+                ]
+              }
+            ]
+          }
         }
-      ]
+      ],
+      "teaches": "SL-T 3 and DNP3 function codes: filter on what a flow may do, not just its port, and permit a flow on every conduit it crosses.",
+      "story": "After the winter incident the board raised Cedar Creek to SL-T 3, and the auditors arrive Friday. A vendor's laptop sits on the engineering bench, a capacitor bank needs remote switching, and every function code you allow is a breaker someone could trip."
     }
   ]
 }
