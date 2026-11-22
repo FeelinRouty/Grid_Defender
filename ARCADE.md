@@ -25,7 +25,7 @@ game:
   levels: 6                     # 3 levels x 2 rounds
   card_image: ""                # no card image exists in the repo yet
   card_image_alt: ""
-  repo: "unknown"               # the repo has not been pushed to GitHub; no remote is configured
+  repo: "https://github.com/FeelinRouty/Grid_Defender"
   repo_path: ""
   license: "unknown"            # no LICENSE file in the repo
 
