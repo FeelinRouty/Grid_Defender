@@ -1,0 +1,30 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grid Defender</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <p class="brand">Grid Defender</p>
+    <p class="tagline">Zones, conduits and DNP3 on an 8×8 grid</p>
+    <span class="spacer"></span>
+    <button type="button" id="restart" disabled>Restart</button>
+  </header>
+  <main id="app" aria-live="off">
+    <p class="status">Loading the substations…</p>
+  </main>
+  <dialog id="restart-dialog" aria-labelledby="restart-h">
+    <h2 id="restart-h">Restart the session?</h2>
+    <p>This clears every round's progress, attempts and help, and returns to the Level 1 briefing.</p>
+    <div class="dialog-actions">
+      <button type="button" id="restart-cancel">Cancel</button>
+      <button type="button" id="restart-confirm" class="primary">Restart</button>
+    </div>
+  </dialog>
+  <div id="announcer" class="visually-hidden" role="status" aria-live="polite"></div>
+  <script type="module" src="main.js"></script>
+</body>
+</html>

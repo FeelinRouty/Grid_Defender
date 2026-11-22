@@ -1,0 +1,22 @@
+{
+  "levelId": "L1",
+  "round": {
+    "id": "1.3",
+    "title": "HMI read access (trial)",
+    "ticketText": "Trial round 1.3: the HMI (H) must read Feeder RTU 2 (R2) directly over DNP3.",
+    "availableAssets": ["M", "H", "R1", "R2"],
+    "required": [{ "src": "H", "dst": "R2", "variant": "dnp3", "fcs": ["READ"] }],
+    "wave": [
+      { "id": "p1", "kind": "new", "flow": { "src": "H", "dst": "R2", "variant": "dnp3", "fc": "READ" }, "label": "HMI reads R2" },
+      { "id": "p2", "kind": "in-session", "parent": "p1", "flow": { "src": "R2", "dst": "H", "variant": "dnp3", "fc": "RESPONSE" }, "label": "Response" },
+      { "id": "p3", "kind": "new", "flow": { "src": "H", "dst": "R1", "variant": "dnp3", "fc": "READ" }, "label": "HMI reads R1 (not on the ticket)" }
+    ],
+    "hints": [
+      "Method: permit exactly the ticket flow.",
+      "Worked step: the source is H and the destination is R2.",
+      "Reference rules: 1 permit H → R2 tcp/20000"
+    ],
+    "feedback": { "correct": "Exactly least privilege for the HMI." },
+    "sourceIds": ["iana-dnp"]
+  }
+}

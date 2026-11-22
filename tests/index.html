@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Grid Defender tests</title>
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 1rem; background: #fff; color: #1b1f24; }
+    .pass { color: #1a7f37; } .fail { color: #b42318; }
+    @media (prefers-color-scheme: dark) { body { background: #0f1419; color: #e6edf3; } .pass { color: #3fb950; } .fail { color: #f85149; } }
+    li { font-family: ui-monospace, Menlo, monospace; }
+  </style>
+</head>
+<body>
+  <h1>Grid Defender tests</h1>
+  <p id="summary" role="status">Running…</p>
+  <h2>Suites</h2>
+  <ul id="suites"></ul>
+  <h2>Failures</h2>
+  <ul id="failures"></ul>
+  <script type="module">
+    import { setContent, setFixture, run } from './harness.js';
+    import { SUITES, FIXTURES } from './suites.js';
+    const summary = document.getElementById('summary');
+    try {
+      const res = await fetch('../data/levels.json', { cache: 'no-store' });
+      setContent(await res.json());
+      for (const name of FIXTURES) setFixture(name, await (await fetch(`./fixtures/${name}.json`, { cache: 'no-store' })).json());
+      for (const path of SUITES) await import(path);
+      const r = await run();
+      summary.textContent = r.ok
+        ? `PASS: ${r.passed}/${r.total} tests passed.`
+        : `FAIL: ${r.passed}/${r.total} passed, ${r.failed.length} failed${r.total === 0 ? ' (no tests discovered)' : ''}.`;
+      summary.className = r.ok ? 'pass' : 'fail';
+      document.getElementById('suites').innerHTML = r.suites.map(s => `<li>${s.name}: ${s.passed}/${s.total}</li>`).join('');
+      document.getElementById('failures').innerHTML = r.failed.length
+        ? r.failed.map(f => `<li class="fail">${f.suite} › ${f.id}: ${f.message.replace(/</g, '&lt;')}</li>`).join('')
+        : '<li>None</li>';
+    } catch (err) {
+      summary.textContent = `FAIL: runner error — ${err.message}`;
+      summary.className = 'fail';
+    }
+  </script>
+</body>
+</html>
