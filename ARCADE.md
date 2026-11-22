@@ -23,8 +23,8 @@ game:
   skill_level: "intermediate"   # players are expected to know IP, ports and ordered ACLs; no OT experience assumed
   play_minutes: 20              # spec target is 15-25 minutes for six rounds; not measured with a learner
   levels: 6                     # 3 levels x 2 rounds
-  card_image: ""                # no card image exists in the repo yet
-  card_image_alt: ""
+  card_image: "assets/images/card.webp"   # 1920x1080 WebP, 66 KB; rendered from assets/card/card.html
+  card_image_alt: "Grid Defender title card: an 8x8 board with Engineering, Control Center and Substation zones, where a green path from the engineering workstation crosses both conduits to RTU R2 and a vendor laptop's red path is stopped before conduit 1."
   repo: "https://github.com/FeelinRouty/Grid_Defender"
   repo_path: ""
   license: "unknown"            # no LICENSE file in the repo

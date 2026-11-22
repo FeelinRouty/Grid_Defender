@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=1280, initial-scale=1">
+  <title>Grid Defender · Arcade card</title>
+  <!--
+    Source for assets/images/card.webp (the Arcade card image, 16:9).
+    Renders the real Level 3 board with the game's own ui/board.js and data/levels.json.
+    Regenerate from the repo root with the server running (python3 -m http.server 8000 --bind 127.0.0.1):
+      "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --headless=new --hide-scrollbars \
+        --window-size=1280,720 --force-device-scale-factor=1.5 --virtual-time-budget=4000 \
+        --screenshot=card.png http://127.0.0.1:8000/assets/card/card.html
+      cwebp -q 86 card.png -o assets/images/card.webp
+  -->
+  <link rel="stylesheet" href="../../style.css">
+  <style>
+    :root {
+      --bg: #0f1419; --surface: #171d24; --text: #e6edf3; --muted: #9da7b3; --border: #30363d;
+      --ok: #3fb950; --bad: #f85149; --neutral: #8b949e; --conduit: #a371f7;
+      --zone-a: #1c3150; --zone-b: #3d2e10; --zone-c: #163322; --cell: 64px;
+    }
+    html, body { margin: 0; width: 1280px; height: 720px; overflow: hidden; }
+    body {
+      background: radial-gradient(1200px 700px at 85% 40%, #1b2a40 0%, #0f1419 60%);
+      color: var(--text); font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+      display: grid; grid-template-columns: 520px 1fr; align-items: center; padding: 0 56px; box-sizing: border-box;
+    }
+    .kicker { color: var(--conduit); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; font-size: 18px; margin: 0 0 14px; }
+    h1 { font-size: 84px; line-height: 1; margin: 0 0 18px; letter-spacing: -0.02em; }
+    .tagline { font-size: 28px; line-height: 1.3; color: var(--text); margin: 0 0 28px; max-width: 470px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 10px; margin: 0 0 30px; padding: 0; list-style: none; }
+    .chips li { border: 1px solid var(--border); background: #ffffff0d; border-radius: 999px; padding: 6px 14px; font-size: 18px; color: var(--muted); }
+    .rule {
+      font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 15px; line-height: 1.6; white-space: nowrap;
+      background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--ok);
+      border-radius: 8px; padding: 10px 14px; color: var(--text); max-width: 470px;
+    }
+    .rule .deny { color: var(--bad); }
+    .rule .dim { color: var(--muted); }
+    .stage { position: relative; justify-self: center; }
+    .stage .legend, .stage .board-details { display: none; }
+    .stage .board { gap: 3px; grid-template-columns: 26px repeat(8, var(--cell)); grid-auto-rows: var(--cell); }
+    .stage .board .label { font-size: 16px; }
+    .stage .board .cell { font-size: 18px; border-radius: 6px; }
+    .stage .cell .glyph { min-width: 40px; height: 40px; font-size: 16px; background: #e6edf3; color: #0f1419; }
+    .stage .cell.conduit { border-width: 3px; box-shadow: 0 0 18px #a371f766; }
+    svg.paths { position: absolute; left: 0; top: 0; pointer-events: none; overflow: visible; z-index: 1; }
+    .stage .cell .glyph, .stage .cell.conduit { position: relative; z-index: 2; }
+    .badge-dot { z-index: 3; }
+    .badge-dot { position: absolute; width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center;
+      font-weight: 800; font-size: 20px; transform: translate(-50%, -50%); box-shadow: 0 0 0 3px #0f1419; }
+    .badge-dot.ok { background: var(--ok); color: #0f1419; }
+    .badge-dot.bad { background: var(--bad); color: #fff; }
+    .zone-tag { position: absolute; font-size: 15px; font-weight: 700; color: #e6edf3cc; transform: translate(-50%, -50%);
+      background: #0f1419cc; border-radius: 6px; padding: 2px 8px; white-space: nowrap; }
+  </style>
+</head>
+<body>
+  <section>
+    <p class="kicker">IEC 62443 · DNP3 · SCADA</p>
+    <h1>Grid Defender</h1>
+    <p class="tagline">Write the conduit rules. Run the wave. See exactly what gets through.</p>
+    <ul class="chips">
+      <li>Zones &amp; conduits</li><li>DNP3 function codes</li><li>Least privilege</li><li>6 rounds</li>
+    </ul>
+    <div class="rule">
+      <div><span class="dim">1</span> permit M → R1 DNP3 {READ, SELECT, OPERATE}</div>
+      <div class="deny">✕ M → R1 DIRECT_OPERATE · implicit deny</div>
+    </div>
+  </section>
+  <div class="stage" id="stage"></div>
+
+  <script type="module">
+    import { renderBoard } from '../../ui/board.js';
+    const doc = await (await fetch('../../data/levels.json')).json();
+    const level = doc.levels.find(l => l.id === 'L3');
+    const board = doc.boards.find(b => b.id === level.boardId);
+    const stage = document.getElementById('stage');
+    stage.append(renderBoard(board, board.assets.map(a => a.id), level.sltOverrides || {}));
+    const grid = stage.querySelector('.board');
+    grid.removeAttribute('aria-hidden');
+
+    const center = cell => {
+      const n = grid.querySelector(`[data-cell="${cell}"]`);
+      return { x: n.offsetLeft + n.offsetWidth / 2, y: n.offsetTop + n.offsetHeight / 2 };
+    };
+    const cellOf = id => board.assets.find(a => a.id === id).cell;
+    const conduit = id => board.conduits.find(c => c.id === id).cell;
+
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.setAttribute('class', 'paths');
+    svg.setAttribute('width', grid.offsetWidth);
+    svg.setAttribute('height', grid.offsetHeight);
+    const line = (cells, color, dash) => {
+      const p = document.createElementNS(svgNS, 'polyline');
+      p.setAttribute('points', cells.map(c => { const o = center(c); return `${o.x},${o.y}`; }).join(' '));
+      p.setAttribute('fill', 'none');
+      p.setAttribute('stroke', color);
+      p.setAttribute('stroke-width', '5');
+      p.setAttribute('stroke-linecap', 'round');
+      p.setAttribute('stroke-linejoin', 'round');
+      if (dash) p.setAttribute('stroke-dasharray', dash);
+      svg.append(p);
+    };
+    // Allowed: Engineering reads R2 across both conduits (round 3.2). Blocked: DIRECT_OPERATE to R1 stops at conduit 2.
+    line([cellOf('E'), conduit('1'), conduit('2'), cellOf('R2')], '#3fb950', '2 12');
+    line([cellOf('V'), conduit('1')], '#f85149', '2 12');
+    grid.append(svg);
+
+    const dotAt = (x, y, cls, text) => {
+      const d = document.createElement('span');
+      d.className = `badge-dot ${cls}`;
+      d.textContent = text;
+      d.style.left = `${x}px`;
+      d.style.top = `${y}px`;
+      grid.append(d);
+    };
+    const r2 = center(cellOf('R2'));
+    dotAt(r2.x, r2.y - 30, 'ok', '✓');
+    // The vendor laptop's packet is stopped just before conduit 1: put the ✕ on its red path, not on the conduit.
+    const v = center(cellOf('V')), c1 = center(conduit('1'));
+    dotAt(v.x + (c1.x - v.x) * 0.62, v.y + (c1.y - v.y) * 0.62, 'bad', '✕');
+
+    const tag = (cells, text) => {
+      const pts = cells.map(center);
+      const d = document.createElement('span');
+      d.className = 'zone-tag';
+      d.textContent = text;
+      d.style.left = `${pts.reduce((s, p) => s + p.x, 0) / pts.length}px`;
+      d.style.top = `${pts.reduce((s, p) => s + p.y, 0) / pts.length}px`;
+      grid.append(d);
+    };
+    tag(['A1', 'C1'], 'Engineering · SL-T 2');
+    tag(['E1', 'H1'], 'Control Center · SL-T 2');
+    tag(['A8', 'H8'], 'Substation · SL-T 3');
+    document.body.dataset.ready = 'true';
+  </script>
+</body>
+</html>
