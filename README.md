@@ -1,5 +1,7 @@
 # Grid Defender
 
+![Grid Defender title card in a dark control-room style: the Level 3 board with Engineering, Control Center and Substation zones, where a green path from the engineering workstation crosses both firewall conduits to RTU R2 and a vendor laptop's red path is stopped before conduit 1.](assets/images/card.webp)
+
 **Write firewall rules on an 8×8 substation grid, run waves of DNP3 traffic through your conduits, and learn IEC 62443 zones and conduits by watching what gets through.**
 
 Grid Defender is a browser game for network engineers who know IP, ports and ordered firewall policies but are new to OT and SCADA. You play the OT network engineer at a small electric co-op. In each round you build rule cards on the conduits between zones so the SCADA master can do its job, and so that nothing else can. Every wave explains what got through, what was stopped, and why.
